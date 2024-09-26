@@ -21,6 +21,7 @@ csp = CSP(
     ],
 )
 
+print(csp.ac_3())
 print(csp.backtracking_search())
 
 # Example output after implementing csp.backtracking_search():

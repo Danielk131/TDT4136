@@ -22,7 +22,7 @@ class CSP:
         """
         self.variables = variables
         self.domains = domains
-        self.edges = edges
+        self.neighbors = {variable: set() for variable in variables}
         # Binary constraints as a dictionary mapping variable pairs to a set of value pairs.
         #
         # To check if variable1=value1, variable2=value2 is in violation of a binary constraint:
@@ -42,7 +42,9 @@ class CSP:
                     if value1 != value2:
                         self.binary_constraints[(variable1, variable2)].add((value1, value2))
                         self.binary_constraints[(variable1, variable2)].add((value2, value1))
-
+            
+            self.neighbors[variable1].add(variable2)
+            self.neighbors[variable2].add(variable1)
     def ac_3(self) -> bool:
         """Performs AC-3 on the CSP.
         Meant to be run prior to calling backtracking_search() to reduce the search for some problems.
@@ -54,30 +56,54 @@ class CSP:
         """
     
         queue = []
-        for variable in self.variables:
-            for edge in self.edges:
-                queue.append((variable, edge))
+            
+        for variable in self.binary_constraints:
+            queue.append(variable)
+        #print("QUEUUE = ", queue)
+        print("Her har vi domains:", self.domains)
 
         while len(queue)>0:
             Xi, Xj = queue.pop(0)
-            if Revise(self, Xi, Xj):
-                for Xk in Xi.edges:
+            if self.Revise(Xi, Xj):
+                if(len(self.domains[Xi]) == 0):
+                    return False
+                for Xk in self.neighbors[Xi]:
                     if Xk != Xj:
                         queue.append((Xk, Xi))
+        print(self.domains)
         return True
     
-def Revise(self, Xi, Xj):
-    revised = False
-    print("Xi:_ " , Xi)
-    print("Xj: ", Xj)
-    for x in self.domains:
-        print("X = ", x)
-        for value in x:
-            print("Value :" , value)
-            if not isConstraint(self, x, value, self.domains):
-                Xi.domain.remove(x)
-                revised=True
-    return revised
+    def Revise(self, Xi, Xj):
+        revised = False
+        #print("Xi:_ " , Xi)
+        #print("Xj: ", Xj)
+        #print("Domains = ", self.domains[Xi])
+        Di = self.domains[Xi]
+        Dj = self.domains[Xj]
+        deleted_from_x = []
+        for x in Di:
+            found_value = False
+        
+            for y in Dj:
+                if (
+                    (Xi, Xj) in self.binary_constraints and
+                    (x, y) in self.binary_constraints[(Xi, Xj)]
+                ) or (
+                    (Xj, Xi) in self.binary_constraints and
+                    (x, y) in self.binary_constraints[(Xj, Xi)]
+                ):
+                    found_value = True  # Found a valid pair
+                    break  # No need to check further y values
+
+            if not found_value:
+                deleted_from_x.append(x)  # Mark for deletion
+
+        for deleteVar in deleted_from_x:
+            print("Sletter:", deleteVar, "Fra", Xi)  # Print correct variable
+            Di.remove(deleteVar)
+            revised = True  # Set revised flag when a deletion occurs
+
+        return revised 
 
 
     def backtracking_search(self) -> None | dict[str, Any]:
@@ -90,6 +116,7 @@ def Revise(self, Xi, Xj):
         """
         def backtrack(assignment: dict[str, Any]):
             if(len(assignment) == len(self.variables)):
+                print(assignment)
                 return assignment
             # YOUR CODE HERE (and remove the assertion below)
             
